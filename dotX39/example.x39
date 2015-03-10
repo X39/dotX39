@@ -1,0 +1,31 @@
+node(arg = "foo")
+{
+	stringOption = "someText";
+	alsoValid = 'someText';
+	scalarOption = 1.2;
+	boolOption = false;
+	datetime = \31.12.9999 24:59\;
+	time = \24:59\;
+	/*some comment*/
+	date = \31.12.9999\;
+	array = [1.0, 2.0, 3.0];
+	array = ["layer1\]", ["layer2\]", [2.0, "layer3\]"], "layer2\]"], "layer1\]", 3.0];
+	subnode
+	{
+		someoption = "foo";
+	}
+}
+node2
+{
+	anotherValidOption = "foo";
+}
+node3(bar = "foo");
+node4()
+{
+	someOption = false;
+}
+node5()
+{
+}/*some comment*/
+node6();
+/*some comment*/                  
