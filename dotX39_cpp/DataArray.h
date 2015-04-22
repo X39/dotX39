@@ -9,47 +9,47 @@ namespace dotX39
 		std::vector<Data*> _data;
 		std::string _name;
 	public:
-		DataArray(void)
+		DataArray::DataArray(void)
 		{
 			_data = std::vector<Data*>();
 			_name = std::string();
 		}
-		~DataArray(void)
+		DataArray::~DataArray(void)
 		{
 			while (!this->_data.empty()){ delete (this->_data.back()); this->_data.pop_back(); }
 		}
-		const std::string getName(void)
+		std::string DataArray::getName(void) const
 		{
 			return this->_name;
 		}
-		void setName(const std::string name)
+		void DataArray::setName(const std::string name)
 		{
 			this->_name = name;
 		}
-		const void* getData(void) { return NULL; }
-		void setData(const void* data) { }
-		DataTypes getType(void)
+		const void* DataArray::getData(void) const { return NULL; }
+		void DataArray::setData(const void* data) { }
+		DataTypes DataArray::getType(void) const
 		{
 			return DataTypes::STRING;
 		}
-		void addDataElement(Data* elm)
+		void DataArray::addDataElement(Data* elm)
 		{
 			this->_data.push_back(elm);
 		}
-		Data* getDataElement(unsigned int index)
+		Data* DataArray::getDataElement(unsigned int index) const
 		{
 			if (this->_data.size() >= index)
 				return NULL;
 			return this->_data[index];
 		}
-		const std::string toString(void)
+		std::string DataArray::toString(void) const
 		{
 			std::string s = "[";
 			for (unsigned int i = 0; i < this->_data.size(); i++)
 			{
-				s.append(this->_data[i]->toString());
-				if(i < this->_data.size() - 1)
+				if (i != 0)
 					s.append(", ");
+				s.append(this->_data[i]->toString());
 			}
 			s.append("]");
 			return s;

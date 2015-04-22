@@ -43,9 +43,8 @@ namespace dotX39
 			*out2 = *out1;
 			*out1 = mode;
 		}
-		void readDocument(const std::string filePath, Node* out) NOEXCEPT(false)
+		void readDocument(std::fstream& doc, Node* out) NOEXCEPT(false)
 		{//TODO: adjust the "throw" so that ALL pointer vectors are deleted!
-			fstream doc(filePath, fstream::in);
 			char s[READER_BUFFERSIZE];
 			s[READER_BUFFERSIZE - 1] = '\0';
 			char* c = 0x00;
@@ -89,7 +88,7 @@ namespace dotX39
 						if (c[0] == ';')
 						{
 							Node* n = new Node(name);
-							for (int j = 0; j < argumentsData.size(); j++)
+							for (unsigned int j = 0; j < argumentsData.size(); j++)
 								n->addArgument(argumentsData[j]);
 							argumentsData.clear();
 							curNodeTree.back()->addSubnode(n);
@@ -109,7 +108,7 @@ namespace dotX39
 						{
 							//We located a new node here
 							Node* n = new Node(name);
-							for (int j = 0; j < argumentsData.size(); j++)
+							for (unsigned int j = 0; j < argumentsData.size(); j++)
 								n->addArgument(argumentsData[j]);
 							argumentsData.clear();
 							curNodeTree.back()->addSubnode(n);
@@ -224,17 +223,22 @@ namespace dotX39
 										c = c + 1;
 										i++;
 									}
-									if (c[0] != ';')
+									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
 										throw exception("Unexpected character where lineTerminator should have been");
 									if (readingMode_last == READINGMODE_NAME)
+									{
 										curNodeTree.back()->addData(readArray(data, name));
+										name.clear();
+									}
 									else
-										argumentsData.push_back(readArray(data, name));
+									{
+										argumentsData.push_back(readArray(data, argumentName));
+										argumentName.clear();
+									}
 									SETREADINGMODE(readingMode_last);
 									dataType = DataTypes::NA;
 									dataTag = false;
 									data.clear();
-									name.clear();
 									arrayCounter = 0;
 								}
 								else
@@ -257,17 +261,22 @@ namespace dotX39
 										c = c + 1;
 										i++;
 									}
-									if (c[0] != ';')
+									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
 										throw exception("Unexpected character where lineTerminator should have been");
 									if (readingMode_last == READINGMODE_NAME)
+									{
 										curNodeTree.back()->addData(readBoolean(data, name));
+										name.clear();
+									}
 									else
-										argumentsData.push_back(readBoolean(data, name));
+									{
+										argumentsData.push_back(readBoolean(data, argumentName));
+										argumentName.clear();
+									}
 									SETREADINGMODE(readingMode_last);
 									dataType = DataTypes::NA;
 									dataTag = false;
 									data.clear();
-									name.clear();
 								}
 								else
 								{
@@ -289,17 +298,22 @@ namespace dotX39
 										c = c + 1;
 										i++;
 									}
-									if (c[0] != ';')
+									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
 										throw exception("Unexpected character where lineTerminator should have been");
 									if (readingMode_last == READINGMODE_NAME)
+									{
 										curNodeTree.back()->addData(readDateTime(data, name));
+										name.clear();
+									}
 									else
-										argumentsData.push_back(readDateTime(data, name));
+									{
+										argumentsData.push_back(readDateTime(data, argumentName));
+										argumentName.clear();
+									}
 									SETREADINGMODE(readingMode_last);
 									dataType = DataTypes::NA;
 									dataTag = false;
 									data.clear();
-									name.clear();
 								}
 								else
 								{
@@ -321,17 +335,22 @@ namespace dotX39
 										c = c + 1;
 										i++;
 									}
-									if (c[0] != ';')
+									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
 										throw exception("Unexpected character where lineTerminator should have been");
 									if (readingMode_last == READINGMODE_NAME)
+									{
 										curNodeTree.back()->addData(readScalar(data, name));
+										name.clear();
+									}
 									else
-										argumentsData.push_back(readScalar(data, name));
+									{
+										argumentsData.push_back(readScalar(data, argumentName));
+										argumentName.clear();
+									}
 									SETREADINGMODE(readingMode_last);
 									dataType = DataTypes::NA;
 									dataTag = false;
 									data.clear();
-									name.clear();
 								}
 								else
 								{
@@ -367,15 +386,28 @@ namespace dotX39
 									data.append(c, cp + 1);
 									i += strlen(c) - strlen(cp);
 									c = cp + 1;
+									while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
+									{
+										c++;
+										i++;
+									}
+									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
+										throw exception("Unexpected character where lineTerminator should have been");
 									if (readingMode_last == READINGMODE_NAME)
+									{
 										curNodeTree.back()->addData(readString(data, name));
+										name.clear();
+										i++;
+									}
 									else
-										argumentsData.push_back(readString(data, name));
+									{
+										argumentsData.push_back(readString(data, argumentName));
+										argumentName.clear();
+									}
 									SETREADINGMODE(readingMode_last);
 									dataType = DataTypes::NA;
 									dataTag = false;
 									data.clear();
-									name.clear();
 								}
 								else
 								{
@@ -424,7 +456,7 @@ namespace dotX39
 							continue;
 						if (c[0] != ';' && c[0] != '{')
 							throw exception("Undexpected character after arguments");
-						if (c[0] == '{')
+						if (c[0] == ';' || c[0] == '{')
 							i--;
 						SETREADINGMODE(READINGMODE_NAME);
 					}
@@ -436,16 +468,13 @@ namespace dotX39
 			if (curNodeTree.size() != 1)
 				throw exception("Invalid node count at EOF");
 		}
-		void writeDocument(const std::string filePath, const Node& documentNode) NOEXCEPT(false)
-		{
-
-		}
 		Data* readString(const std::string data, const std::string name) NOEXCEPT(false)
 		{
 			std::string work = data;
 			trim(work);
 			if (work.length() < 2 || !((work[0] == '"' && work.back() == '"') || (work[0] == '\'' && work.back() == '\'')))
 				throw exception("Invalid Arguments, Provided string contains no STRING dataType");
+			//ToDo: Parse backslashed characters
 			work.erase(work.begin(), work.begin() + 1);
 			work.erase(work.end() - 1, work.end());
 			DataString* dataString = new DataString(work, name);
@@ -458,7 +487,6 @@ namespace dotX39
 		Data* readDateTime(const std::string data, const std::string name) NOEXCEPT(false)
 		{
 			std::string work = data;
-			int num;
 			trim(work);
 			if (work.length() < 2 || work[0] != '\\' || work.back() != '\\')
 				throw exception("Invalid Arguments, Provided string contains no DATETIME dataType");
@@ -577,7 +605,7 @@ namespace dotX39
 						}
 						break;
 					case '[':
-						{
+						{//ToDo: Bugged! It Creates multiple array instances (see arrayError.txt)
 							auto cp = work.c_str() + 1;
 							auto j = 0;
 							auto index = 1;

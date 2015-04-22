@@ -4,7 +4,7 @@ namespace dotX39
 {
 	Node::Node(std::string s)
 	{
-
+		this->_name = (s.empty() ? "NOTSET" : s);
 	}
 	Node::~Node()
 	{
@@ -25,37 +25,49 @@ namespace dotX39
 	{
 		this->_dataList.push_back(obj);
 	}
-	const std::vector<Data*>* Node::getDataArray(void)
+	const std::vector<Data*>* Node::getDataArray(void) const
 	{
 		return &this->_dataList;
 	}
-	const Data* Node::getData(int index)
+	unsigned int Node::getDataCount(void) const
+	{
+		return this->_dataList.size();
+	}
+	const Data* Node::getData(unsigned int index) const
 	{
 		if (this->_dataList.size() <= index)
 			return NULL;
 		return this->_dataList[index];
 	}
-	const std::vector<Data*>* Node::getArgumentArray(void)
+	const std::vector<Data*>* Node::getArgumentArray(void) const
 	{
 		return &this->_argList;
 	}
-	const Data* Node::getArgument(int index)
+	unsigned int Node::getArgumentCount(void) const
 	{
-		if (this->_dataList.size() <= index)
+		return this->_argList.size();
+	}
+	const Data* Node::getArgument(unsigned int index) const
+	{
+		if (this->_argList.size() <= index)
 			return NULL;
 		return this->_argList[index];
 	}
-	const std::vector<Node*>* Node::getNodeArray(void)
+	const std::vector<Node*>* Node::getNodeArray(void) const
 	{
 		return &this->_nodeList;
 	}
-	const Node* Node::getNode(int index)
+	unsigned int Node::getNodeCount(void) const
 	{
-		if (this->_dataList.size() <= index)
+		return this->_nodeList.size();
+	}
+	const Node* Node::getNode(unsigned int index) const
+	{
+		if (this->_nodeList.size() <= index)
 			return NULL;
 		return this->_nodeList[index];
 	}
-	const std::string Node::getName(void)
+	std::string Node::getName(void) const
 	{
 		return this->_name;
 	}

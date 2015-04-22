@@ -3,16 +3,22 @@
 #include "Node.h"
 #include "Data.h"
 #include <string>
+#include <fstream>
 namespace dotX39
 {
 	namespace DocumentReader
 	{
-		void readDocument(const std::string filePath, Node* out);
-		void writeDocument(const std::string filePath, const Node& documentNode);
-		Data* readString(const std::string data, const std::string name);
-		Data* readScalar(const std::string data, const std::string name);
-		Data* readDateTime(const std::string data, const std::string name);
-		Data* readBoolean(const std::string data, const std::string name);
-		Data* readArray(const std::string data, const std::string name);
+		void readDocument(std::fstream&, Node*);
+		inline void readDocument(const std::string filePath, Node* out) NOEXCEPT(false)
+		{
+			std::fstream stream(filePath, std::fstream::in);
+			readDocument(stream, out);
+			stream.close();
+		}
+		Data* readString(const std::string, const std::string);
+		Data* readScalar(const std::string, const std::string);
+		Data* readDateTime(const std::string, const std::string);
+		Data* readBoolean(const std::string, const std::string);
+		Data* readArray(const std::string, const std::string);
 	};
 };

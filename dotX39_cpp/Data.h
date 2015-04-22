@@ -16,11 +16,11 @@ namespace dotX39
 	{
 	public:
 		virtual ~Data(void) {};
-		virtual const std::string getName(void) = 0;
+		virtual std::string getName(void) const = 0;
 		virtual void setName(const std::string name) = 0;
-		virtual const void* getData(void) = 0;
+		virtual const void* getData(void) const = 0;
 		virtual void setData(const void* data) = 0;
-		virtual DataTypes getType(void) = 0;
-		virtual const std::string toString(void) = 0;
+		virtual DataTypes getType(void) const = 0;
+		virtual std::string toString(void) const = 0;
 	};
 };

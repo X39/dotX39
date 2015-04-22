@@ -8,44 +8,44 @@ namespace dotX39
 		long double _data;
 		std::string _name;
 	public:
-		DataScalar(long double data = 0, std::string name = "")
+		DataScalar::DataScalar(long double data = 0, std::string name = "")
 		{
 			_data = data;
 			_name = name;
 		}
-		~DataScalar(void)
+		DataScalar::~DataScalar(void)
 		{
 			
 		}
-		const std::string getName(void)
+		std::string DataScalar::getName(void) const
 		{
 			return this->_name;
 		}
-		void setName(const std::string name)
+		void DataScalar::setName(const std::string name)
 		{
 			this->_name = name;
 		}
-		const void* getData(void)
+		const void* DataScalar::getData(void) const
 		{
 			return (void*)&this->_data;
 		}
-		const long double getDataAsLongDouble(void)
+		const long double DataScalar::getDataAsLongDouble(void) const
 		{
 			return this->_data;
 		}
-		void setData(const void* data)
+		void DataScalar::setData(const void* data)
 		{
 			this->_data = *(long double*)data;
 		}
-		void setDataAsLongDouble(long double data)
+		void DataScalar::setDataAsLongDouble(long double data)
 		{
 			this->_data = data;
 		}
-		DataTypes getType(void)
+		DataTypes DataScalar::getType(void) const
 		{
 			return DataTypes::SCALAR;
 		}
-		const std::string toString(void)
+		std::string DataScalar::toString(void) const
 		{
 			return std::to_string(this->_data);
 		}

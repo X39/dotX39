@@ -8,44 +8,44 @@ namespace dotX39
 		bool _data;
 		std::string _name;
 	public:
-		DataBoolean(bool data = false, std::string name = "")
+		DataBoolean::DataBoolean(bool data = false, std::string name = "")
 		{
 			_data = data;
 			_name = name;
 		}
-		~DataBoolean(void)
+		DataBoolean::~DataBoolean(void)
 		{
 			
 		}
-		const std::string getName(void)
+		std::string DataBoolean::getName(void) const
 		{
 			return this->_name;
 		}
-		void setName(const std::string name)
+		void DataBoolean::setName(const std::string name)
 		{
 			this->_name = name;
 		}
-		const void* getData(void)
+		const void* DataBoolean::getData(void) const
 		{
 			return (void*)&this->_data;
 		}
-		const bool getDataAsBoolean(void)
+		const bool DataBoolean::getDataAsBoolean(void) const
 		{
 			return this->_data;
 		}
-		void setData(const void* data)
+		void DataBoolean::setData(const void* data)
 		{
 			this->_data = *(bool*)data;
 		}
-		void setDataAsBoolean(bool data)
+		void DataBoolean::setDataAsBoolean(bool data)
 		{
 			this->_data = data;
 		}
-		DataTypes getType(void)
+		DataTypes DataBoolean::getType(void) const
 		{
 			return DataTypes::BOOLEAN;
 		}
-		const std::string toString(void)
+		std::string DataBoolean::toString(void) const
 		{
 			return (this->_data ? "TRUE" : "FALSE");
 		}

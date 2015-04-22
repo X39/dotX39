@@ -45,6 +45,9 @@
     <ClInclude Include="DataDateTime.h">
       <Filter>Header Files\DataContainers</Filter>
     </ClInclude>
+    <ClInclude Include="DocumentWriter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Node.cpp">
@@ -54,6 +57,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DocumentWriter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

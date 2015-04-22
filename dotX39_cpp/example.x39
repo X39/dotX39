@@ -1,7 +1,7 @@
 node(arg = "foo")
 {
 	stringOption = "someText";
-	alsoValid = 'someText';
+	alsoValid = 'some\\"Text';
 	scalarOption = 1.2;
 	boolOption = false;
 	datetime = \31.12.9999 24:59\;
@@ -9,6 +9,7 @@ node(arg = "foo")
 	/*some comment*/
 	date = \31.12.9999\;
 	array = [1.0, 2.0, 3.0];
+	array = ["1", ["2", ["3", ["4", ["5", ["6", ["7", ["8"]]]]]]]];
 	array = ["layer1\]", ["layer2\]", [2.0, "layer3\]"], "layer2\]"], "layer1\]", 3.0];
 	subnode
 	{
@@ -28,4 +29,5 @@ node5()
 {
 }/*some comment*/
 node6();
-/*some comment*/                  
+/*some comment*/
+node7;
