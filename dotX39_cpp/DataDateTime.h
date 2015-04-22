@@ -13,7 +13,7 @@ namespace dotX39
 		unsigned short _second;
 		std::string _name;
 	public:
-		DataDateTime::DataDateTime(unsigned short day = 0, unsigned short month = 0, unsigned short year = 0, unsigned short hour = 0, unsigned short minute = 0, unsigned short second = 0, std::string name = "")
+		DataDateTime::DataDateTime(unsigned short day = 0, unsigned short month = 0, unsigned short year = 0, unsigned short hour = 0, unsigned short minute = 0, unsigned short second = 0, std::string name = "NOTSET")
 		{
 			this->_day = day;
 			this->_month = month;
@@ -52,7 +52,6 @@ namespace dotX39
 		}
 		std::string DataDateTime::toString(void) const
 		{
-			//ToDo: Fix Format
 			std::string s = "\\";
 			s.append(std::to_string(this->_day)).append(".");
 			s.append(std::to_string(this->_month)).append(".");

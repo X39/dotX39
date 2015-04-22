@@ -54,6 +54,7 @@ namespace dotX39
 			bool commentFlag = false;
 			unsigned int readingMode = READINGMODE_NAME;
 			unsigned int readingMode_last = READINGMODE_NAME;
+			unsigned long lineNumber = 0;
 			string name;
 			string argumentName;
 			bool dataTag = false;
@@ -62,87 +63,385 @@ namespace dotX39
 			vector<Data*> argumentsData;
 			if (!doc.is_open())
 				throw exception("Cannot open file");
-			while (!doc.eof())
+			try
 			{
-				doc.read(s, READER_BUFFERSIZE - 1);
-				auto gcount = doc.gcount();
-				s[gcount] = '\0';
-				for (int i = 0; i < READER_BUFFERSIZE; i++)
+				while (!doc.eof())
 				{
-					if (curNodeTree.size() < 1)
-						throw exception("While parsing the document, the root node got closed");
-					c = s + i;
-					if (c[0] == '\0')
-						break;
-					if (commentFlag)
+					doc.read(s, READER_BUFFERSIZE - 1);
+					auto gcount = doc.gcount();
+					s[gcount] = '\0';
+					for (int i = 0; i < READER_BUFFERSIZE; i++)
 					{
-						if (c[0] == '*' && c[1] == '/')
+						if (curNodeTree.size() < 1)
+							throw exception("While parsing the document, the root node got closed");
+						c = s + i;
+						if (c[0] == '\0')
+							break;
+						if (c[0] == '\n')
+							lineNumber++;
+						if (commentFlag)
 						{
-							commentFlag = false;
-							i++;
-						}
-						continue;
-					}
-					if (readingMode == READINGMODE_NAME)
-					{
-						if (c[0] == ';')
-						{
-							Node* n = new Node(name);
-							for (unsigned int j = 0; j < argumentsData.size(); j++)
-								n->addArgument(argumentsData[j]);
-							argumentsData.clear();
-							curNodeTree.back()->addSubnode(n);
-							name.clear();
+							if (c[0] == '*' && c[1] == '/')
+							{
+								commentFlag = false;
+								i++;
+							}
 							continue;
 						}
+						if (readingMode == READINGMODE_NAME)
+						{
+							if (c[0] == ';')
+							{
+								Node* n = new Node(name);
+								for (unsigned int j = 0; j < argumentsData.size(); j++)
+									n->addArgument(argumentsData[j]);
+								argumentsData.clear();
+								curNodeTree.back()->addSubnode(n);
+								name.clear();
+								continue;
+							}
 #pragma region node arguments
-						if (c[0] == '(')
-						{
-							//We located an argument
-							SETREADINGMODE(READINGMODE_ARGUMENT);
-							continue;
-						}
+							if (c[0] == '(')
+							{
+								//We located an argument
+								SETREADINGMODE(READINGMODE_ARGUMENT);
+								continue;
+							}
 #pragma endregion
 #pragma region new node
-						if (c[0] == '{')
-						{
-							//We located a new node here
-							Node* n = new Node(name);
-							for (unsigned int j = 0; j < argumentsData.size(); j++)
-								n->addArgument(argumentsData[j]);
-							argumentsData.clear();
-							curNodeTree.back()->addSubnode(n);
-							curNodeTree.push_back(n);
-							name.clear();
-							continue;
-						}
-						else if (c[0] == '}')
-						{
-							//Current node wants to be closed
-							curNodeTree.pop_back();
-							continue;
-						}
+							if (c[0] == '{')
+							{
+								//We located a new node here
+								Node* n = new Node(name);
+								for (unsigned int j = 0; j < argumentsData.size(); j++)
+									n->addArgument(argumentsData[j]);
+								argumentsData.clear();
+								curNodeTree.back()->addSubnode(n);
+								curNodeTree.push_back(n);
+								name.clear();
+								continue;
+							}
+							else if (c[0] == '}')
+							{
+								//Current node wants to be closed
+								curNodeTree.pop_back();
+								continue;
+							}
 #pragma endregion
 #pragma region new option data
-						else if (c[0] == '=')
+							else if (c[0] == '=')
+							{
+								//We located some data for our node here
+								SETREADINGMODE(READINGMODE_DATA);
+								continue;
+							}
+#pragma endregion
+#pragma region new character for name
+							else if (c[0] == '/' && c[1] == '*')
+							{
+								commentFlag = true;
+								continue;
+							}
+							else if (true)
+							{
+								//just another char ... lets add it
+								if (isalnum(c[0]))
+								{
+									name.append(c, c + 1);
+									continue;
+								}
+								else if (iscntrl(c[0]) || c[0] == ' ')
+								{
+									//just discard it as it is not allowed for node names
+									continue;
+								}
+								else
+								{
+									throw exception("found non alphanumeric char for node name, please correct the file");
+								}
+							}
+#pragma endregion
+							continue;
+						}
+						else if (readingMode == READINGMODE_DATA)
 						{
-							//We located some data for our node here
-							SETREADINGMODE(READINGMODE_DATA);
+#pragma region define datatype
+							if (!dataTag)
+							{//Searching DataTag
+								if (iscntrl(c[0]) || c[0] == ' '){ continue; }
+								else if (c[0] == '['){ dataTag = true; dataType = DataTypes::ARRAY; i--; }
+								else if (c[0] == '"'){ dataTag = true; dataType = DataTypes::STRING; i--; }
+								else if (c[0] == '\''){ dataTag = true; dataType = DataTypes::STRING; i--; }
+								else if (c[0] == '\\'){ dataTag = true; dataType = DataTypes::DATETIME; i--; }
+								else if (c[0] >= '0' && c[0] <= '9'){ dataTag = true; dataType = DataTypes::SCALAR; i--; }
+								else if (c[0] == 'f' || c[0] == 'F' || c[0] == 't' || c[0] == 'T'){ dataTag = true; dataType = DataTypes::BOOLEAN; i--; }
+
+								else if (c[0] == '(' || c[0] == ')'){ throw exception("Invalid argument tag when data tag was expected"); }
+								else if (c[0] == '{' || c[0] == '}'){ throw exception("Invalid node tag when data tag was expected"); }
+								else if (c[0] == ']'){ throw exception("Invalid close array tag when open array (or another data) tag was expected"); }
+								else if (c[0] == ';'){ throw exception("Invalid end of line tag when data tag was expected"); }
+								else if (c[0] == ':'){ throw exception("Invalid time seperator tag when data tag was expected"); }
+								else if (c[0] == '.'){ throw exception("Invalid scalar/date seperator tag when data tag was expected"); }
+								else if (c[0] == ','){ throw exception("Invalid seperator tag when data tag was expected"); }
+								else { throw exception("Invalid unknown tag when data tag was expected"); }
+								continue;
+							}
+#pragma endregion
+
+#pragma region parse data
+							else
+							{
+								if (dataType == DataTypes::ARRAY)
+								{
+									char* cp = c;
+									char* cp2;
+
+									while (true)
+									{
+										//ToDo: Improove array detection to allow strings to have non-escaped ']' and '['
+										if (cp[0] == '[' || cp[0] == ']')
+										{
+											cp2 = cp;
+											int j = 0;
+											for (cp2 = cp; cp2[-1] == '\\'; cp2--)
+												j++;
+											if (j % 2 != 1)
+											{
+												if (cp[0] == '[')
+													arrayCounter++;
+												else
+													arrayCounter--;
+												if (arrayCounter == 0)
+													break;
+											}
+										}
+										cp++;
+										if (cp[0] == NULL)
+											break;
+									}
+									if (cp[0] != NULL)
+									{
+										data.append(c, cp + 1);
+										i += strlen(c) - strlen(cp) + 1;
+										c = cp + 1;
+										while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
+										{
+											c = c + 1;
+											i++;
+										}
+										if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
+											throw exception("Unexpected character where lineTerminator should have been");
+										if (readingMode_last == READINGMODE_NAME)
+										{
+											curNodeTree.back()->addData(readArray(data, name));
+											name.clear();
+										}
+										else
+										{
+											argumentsData.push_back(readArray(data, argumentName));
+											argumentName.clear();
+										}
+										SETREADINGMODE(readingMode_last);
+										dataType = DataTypes::NA;
+										dataTag = false;
+										data.clear();
+										arrayCounter = 0;
+									}
+									else
+									{
+										data.append(c);
+										i = READER_BUFFERSIZE;
+									}
+								}
+								else if (dataType == DataTypes::BOOLEAN)
+								{
+									char* cp;
+									cp = strchr(c, ';');
+									if (cp != NULL)
+									{
+										data.append(c, cp);
+										i += strlen(c) - strlen(cp);
+										c = cp;
+										while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
+										{
+											c = c + 1;
+											i++;
+										}
+										if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
+											throw exception("Unexpected character where lineTerminator should have been");
+										if (readingMode_last == READINGMODE_NAME)
+										{
+											curNodeTree.back()->addData(readBoolean(data, name));
+											name.clear();
+										}
+										else
+										{
+											argumentsData.push_back(readBoolean(data, argumentName));
+											argumentName.clear();
+										}
+										SETREADINGMODE(readingMode_last);
+										dataType = DataTypes::NA;
+										dataTag = false;
+										data.clear();
+									}
+									else
+									{
+										data.append(c);
+										i = READER_BUFFERSIZE;
+									}
+								}
+								else if (dataType == DataTypes::DATETIME)
+								{
+									char* cp;
+									cp = strchr(c + 1, '\\');
+									if (cp != NULL)
+									{
+										data.append(c, cp + 1);
+										i += strlen(c) - strlen(cp) + 1;
+										c = cp + 1;
+										while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
+										{
+											c = c + 1;
+											i++;
+										}
+										if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
+											throw exception("Unexpected character where lineTerminator should have been");
+										if (readingMode_last == READINGMODE_NAME)
+										{
+											curNodeTree.back()->addData(readDateTime(data, name));
+											name.clear();
+										}
+										else
+										{
+											argumentsData.push_back(readDateTime(data, argumentName));
+											argumentName.clear();
+										}
+										SETREADINGMODE(readingMode_last);
+										dataType = DataTypes::NA;
+										dataTag = false;
+										data.clear();
+									}
+									else
+									{
+										data.append(c);
+										i = READER_BUFFERSIZE;
+									}
+								}
+								else if (dataType == DataTypes::SCALAR)
+								{
+									char* cp;
+									cp = strchr(c, ';');
+									if (cp != NULL)
+									{
+										data.append(c, cp);
+										i += strlen(c) - strlen(cp);
+										c = cp;
+										while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
+										{
+											c = c + 1;
+											i++;
+										}
+										if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
+											throw exception("Unexpected character where lineTerminator should have been");
+										if (readingMode_last == READINGMODE_NAME)
+										{
+											curNodeTree.back()->addData(readScalar(data, name));
+											name.clear();
+										}
+										else
+										{
+											argumentsData.push_back(readScalar(data, argumentName));
+											argumentName.clear();
+										}
+										SETREADINGMODE(readingMode_last);
+										dataType = DataTypes::NA;
+										dataTag = false;
+										data.clear();
+									}
+									else
+									{
+										data.append(c);
+										i = READER_BUFFERSIZE;
+									}
+								}
+								else if (dataType == DataTypes::STRING)
+								{
+									char* cp;
+									char* cp2;
+									char* cp3 = c + 1;
+									int j = 0;
+									char c2 = c[0];
+									while (true)
+									{
+										cp = strchr(cp3, c2);
+										if (cp == NULL)
+										{
+											break;
+										}
+										for (cp2 = cp; cp2[-1] == '\\';)
+										{
+											j++;
+											cp2 = cp2 - 1;
+										}
+										if (j % 2 != 1)
+											break;
+										cp3 = cp + 1;
+									}
+									if (cp != NULL)
+									{
+										data.append(c, cp + 1);
+										i += strlen(c) - strlen(cp);
+										c = cp + 1;
+										while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
+										{
+											c++;
+											i++;
+										}
+										if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
+											throw exception("Unexpected character where lineTerminator should have been");
+										if (readingMode_last == READINGMODE_NAME)
+										{
+											curNodeTree.back()->addData(readString(data, name));
+											name.clear();
+											i++;
+										}
+										else
+										{
+											argumentsData.push_back(readString(data, argumentName));
+											argumentName.clear();
+										}
+										SETREADINGMODE(readingMode_last);
+										dataType = DataTypes::NA;
+										dataTag = false;
+										data.clear();
+									}
+									else
+									{
+										data.append(c);
+										i = READER_BUFFERSIZE;
+									}
+								}
+							}
 							continue;
 						}
 #pragma endregion
-#pragma region new character for name
-						else if (c[0] == '/' && c[1] == '*')
-						{
-							commentFlag = true;
-							continue;
-						}
-						else if (true)
+#pragma region handle arguments
+						else if (readingMode == READINGMODE_ARGUMENT)
 						{
 							//just another char ... lets add it
+							if (c[0] == '=')
+							{
+								SETREADINGMODE(READINGMODE_DATA);
+								continue;
+							}
+							if (c[0] == ')')
+							{
+								SETREADINGMODE(READINGMODE_ARGUMENT_END);
+								continue;
+							}
 							if (isalnum(c[0]))
 							{
-								name.append(c, c + 1);
+								argumentName.append(c, c + 1);
 								continue;
 							}
 							else if (iscntrl(c[0]) || c[0] == ' ')
@@ -152,316 +451,28 @@ namespace dotX39
 							}
 							else
 							{
-								throw exception("found non alphanumeric char for node name, please correct the file");
+								throw exception("found non alphanumeric char for argument name, please correct the file");
 							}
+						}
+						else if (readingMode == READINGMODE_ARGUMENT_END)
+						{
+							if (c[0] == ' ' || c[0] == '\r' || c[0] == '\n' || c[0] == '\t')
+								continue;
+							if (iscntrl(c[0]))
+								continue;
+							if (c[0] != ';' && c[0] != '{')
+								throw exception("Undexpected character after arguments");
+							if (c[0] == ';' || c[0] == '{')
+								i--;
+							SETREADINGMODE(READINGMODE_NAME);
 						}
 #pragma endregion
-						continue;
 					}
-					else if (readingMode == READINGMODE_DATA)
-					{
-#pragma region define datatype
-						if (!dataTag)
-						{//Searching DataTag
-							if (iscntrl(c[0]) || c[0] == ' '){ continue; }
-							else if (c[0] == '['){ dataTag = true; dataType = DataTypes::ARRAY; i--; }
-							else if (c[0] == '"'){ dataTag = true; dataType = DataTypes::STRING; i--; }
-							else if (c[0] == '\''){ dataTag = true; dataType = DataTypes::STRING; i--; }
-							else if (c[0] == '\\'){ dataTag = true; dataType = DataTypes::DATETIME; i--; }
-							else if (c[0] >= '0' && c[0] <= '9'){ dataTag = true; dataType = DataTypes::SCALAR; i--; }
-							else if (c[0] == 'f' || c[0] == 'F' || c[0] == 't' || c[0] == 'T'){ dataTag = true; dataType = DataTypes::BOOLEAN; i--; }
-
-							else if (c[0] == '(' || c[0] == ')'){ throw exception("Invalid argument tag when data tag was expected"); }
-							else if (c[0] == '{' || c[0] == '}'){ throw exception("Invalid node tag when data tag was expected"); }
-							else if (c[0] == ']'){ throw exception("Invalid close array tag when open array (or another data) tag was expected"); }
-							else if (c[0] == ';'){ throw exception("Invalid end of line tag when data tag was expected"); }
-							else if (c[0] == ':'){ throw exception("Invalid time seperator tag when data tag was expected"); }
-							else if (c[0] == '.'){ throw exception("Invalid scalar/date seperator tag when data tag was expected"); }
-							else if (c[0] == ','){ throw exception("Invalid seperator tag when data tag was expected"); }
-							else { throw exception("Invalid unknown tag when data tag was expected"); }
-							continue;
-						}
-#pragma endregion
-
-#pragma region parse data
-						else
-						{
-							if (dataType == DataTypes::ARRAY)
-							{
-								char* cp = c;
-								char* cp2;
-
-								while (true)
-								{
-									if (cp[0] == '[' || cp[0] == ']')
-									{
-										cp2 = cp;
-										int j = 0;
-										for (cp2 = cp; cp2[-1] == '\\'; cp2--)
-											j++;
-										if (j % 2 != 1)
-										{
-											if (cp[0] == '[')
-												arrayCounter++;
-											else
-												arrayCounter--;
-											if (arrayCounter == 0)
-												break;
-										}
-									}
-									cp++;
-									if (cp[0] == NULL)
-										break;
-								}
-								if (cp[0] != NULL)
-								{
-									data.append(c, cp + 1);
-									i += strlen(c) - strlen(cp) + 1;
-									c = cp + 1;
-									while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
-									{
-										c = c + 1;
-										i++;
-									}
-									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
-										throw exception("Unexpected character where lineTerminator should have been");
-									if (readingMode_last == READINGMODE_NAME)
-									{
-										curNodeTree.back()->addData(readArray(data, name));
-										name.clear();
-									}
-									else
-									{
-										argumentsData.push_back(readArray(data, argumentName));
-										argumentName.clear();
-									}
-									SETREADINGMODE(readingMode_last);
-									dataType = DataTypes::NA;
-									dataTag = false;
-									data.clear();
-									arrayCounter = 0;
-								}
-								else
-								{
-									data.append(c);
-									i = READER_BUFFERSIZE;
-								}
-							}
-							else if (dataType == DataTypes::BOOLEAN)
-							{
-								char* cp;
-								cp = strchr(c, ';');
-								if (cp != NULL)
-								{
-									data.append(c, cp);
-									i += strlen(c) - strlen(cp);
-									c = cp;
-									while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
-									{
-										c = c + 1;
-										i++;
-									}
-									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
-										throw exception("Unexpected character where lineTerminator should have been");
-									if (readingMode_last == READINGMODE_NAME)
-									{
-										curNodeTree.back()->addData(readBoolean(data, name));
-										name.clear();
-									}
-									else
-									{
-										argumentsData.push_back(readBoolean(data, argumentName));
-										argumentName.clear();
-									}
-									SETREADINGMODE(readingMode_last);
-									dataType = DataTypes::NA;
-									dataTag = false;
-									data.clear();
-								}
-								else
-								{
-									data.append(c);
-									i = READER_BUFFERSIZE;
-								}
-							}
-							else if (dataType == DataTypes::DATETIME)
-							{
-								char* cp;
-								cp = strchr(c + 1, '\\');
-								if (cp != NULL)
-								{
-									data.append(c, cp + 1);
-									i += strlen(c) - strlen(cp) + 1;
-									c = cp + 1;
-									while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
-									{
-										c = c + 1;
-										i++;
-									}
-									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
-										throw exception("Unexpected character where lineTerminator should have been");
-									if (readingMode_last == READINGMODE_NAME)
-									{
-										curNodeTree.back()->addData(readDateTime(data, name));
-										name.clear();
-									}
-									else
-									{
-										argumentsData.push_back(readDateTime(data, argumentName));
-										argumentName.clear();
-									}
-									SETREADINGMODE(readingMode_last);
-									dataType = DataTypes::NA;
-									dataTag = false;
-									data.clear();
-								}
-								else
-								{
-									data.append(c);
-									i = READER_BUFFERSIZE;
-								}
-							}
-							else if (dataType == DataTypes::SCALAR)
-							{
-								char* cp;
-								cp = strchr(c, ';');
-								if (cp != NULL)
-								{
-									data.append(c, cp);
-									i += strlen(c) - strlen(cp);
-									c = cp;
-									while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
-									{
-										c = c + 1;
-										i++;
-									}
-									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
-										throw exception("Unexpected character where lineTerminator should have been");
-									if (readingMode_last == READINGMODE_NAME)
-									{
-										curNodeTree.back()->addData(readScalar(data, name));
-										name.clear();
-									}
-									else
-									{
-										argumentsData.push_back(readScalar(data, argumentName));
-										argumentName.clear();
-									}
-									SETREADINGMODE(readingMode_last);
-									dataType = DataTypes::NA;
-									dataTag = false;
-									data.clear();
-								}
-								else
-								{
-									data.append(c);
-									i = READER_BUFFERSIZE;
-								}
-							}
-							else if (dataType == DataTypes::STRING)
-							{
-								char* cp;
-								char* cp2;
-								char* cp3 = c + 1;
-								int j = 0;
-								char c2 = c[0];
-								while (true)
-								{
-									cp = strchr(cp3, c2);
-									if (cp == NULL)
-									{
-											break;
-									}
-									for (cp2 = cp; cp2[-1] == '\\';)
-									{
-										j++;
-										cp2 = cp2 - 1;
-									}
-									if (j % 2 != 1)
-										break;
-									cp3 = cp + 1;
-								}
-								if (cp != NULL)
-								{
-									data.append(c, cp + 1);
-									i += strlen(c) - strlen(cp);
-									c = cp + 1;
-									while (iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t')
-									{
-										c++;
-										i++;
-									}
-									if ((c[0] != ';' && readingMode_last == READINGMODE_NAME) || (c[0] != ',' && c[0] != ')' && readingMode_last == READINGMODE_ARGUMENT))
-										throw exception("Unexpected character where lineTerminator should have been");
-									if (readingMode_last == READINGMODE_NAME)
-									{
-										curNodeTree.back()->addData(readString(data, name));
-										name.clear();
-										i++;
-									}
-									else
-									{
-										argumentsData.push_back(readString(data, argumentName));
-										argumentName.clear();
-									}
-									SETREADINGMODE(readingMode_last);
-									dataType = DataTypes::NA;
-									dataTag = false;
-									data.clear();
-								}
-								else
-								{
-									data.append(c);
-									i = READER_BUFFERSIZE;
-								}
-							}
-						}
-						continue;
-					}
-#pragma endregion
-#pragma region handle arguments
-					else if (readingMode == READINGMODE_ARGUMENT)
-					{
-						//just another char ... lets add it
-						if (c[0] == '=')
-						{
-							SETREADINGMODE(READINGMODE_DATA);
-							continue;
-						}
-						if (c[0] == ')')
-						{
-							SETREADINGMODE(READINGMODE_ARGUMENT_END);
-							continue;
-						}
-						if (isalnum(c[0]))
-						{
-							argumentName.append(c, c + 1);
-							continue;
-						}
-						else if (iscntrl(c[0]) || c[0] == ' ')
-						{
-							//just discard it as it is not allowed for node names
-							continue;
-						}
-						else
-						{
-							throw exception("found non alphanumeric char for argument name, please correct the file");
-						}
-					}
-					else if (readingMode == READINGMODE_ARGUMENT_END)
-					{
-						if (c[0] == ' ' || c[0] == '\r' || c[0] == '\n' || c[0] == '\t')
-							continue;
-						if (iscntrl(c[0]))
-							continue;
-						if (c[0] != ';' && c[0] != '{')
-							throw exception("Undexpected character after arguments");
-						if (c[0] == ';' || c[0] == '{')
-							i--;
-						SETREADINGMODE(READINGMODE_NAME);
-					}
-#pragma endregion
 				}
+			}
+			catch (exception e)
+			{
+				throw new exception(string("Exception '").append(e.what()).append("' on line ").append(to_string(lineNumber)).c_str());
 			}
 			if (readingMode != READINGMODE_NAME)
 				throw exception("Reached EOF before all parsing operations ended");
@@ -474,10 +485,9 @@ namespace dotX39
 			trim(work);
 			if (work.length() < 2 || !((work[0] == '"' && work.back() == '"') || (work[0] == '\'' && work.back() == '\'')))
 				throw exception("Invalid Arguments, Provided string contains no STRING dataType");
-			//ToDo: Parse backslashed characters
 			work.erase(work.begin(), work.begin() + 1);
 			work.erase(work.end() - 1, work.end());
-			DataString* dataString = new DataString(work, name);
+			DataString* dataString = new DataString(work, name, true);
 			return dataString;
 		}
 		Data* readScalar(const std::string data, const std::string name) NOEXCEPT(false)
@@ -605,7 +615,7 @@ namespace dotX39
 						}
 						break;
 					case '[':
-						{//ToDo: Bugged! It Creates multiple array instances (see arrayError.txt)
+						{
 							auto cp = work.c_str() + 1;
 							auto j = 0;
 							auto index = 1;
@@ -632,6 +642,7 @@ namespace dotX39
 								index++;
 							}
 							d = readArray(work.substr(0, index + 1), "");
+							work.erase(work.begin(), work.begin() + index + 1);
 							p = work.find_first_of(",");
 							if (p != string::npos)
 								work.erase(work.begin(), work.begin() + p);

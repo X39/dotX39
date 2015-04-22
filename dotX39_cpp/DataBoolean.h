@@ -8,7 +8,7 @@ namespace dotX39
 		bool _data;
 		std::string _name;
 	public:
-		DataBoolean::DataBoolean(bool data = false, std::string name = "")
+		DataBoolean::DataBoolean(bool data = false, std::string name = "NOTSET")
 		{
 			_data = data;
 			_name = name;

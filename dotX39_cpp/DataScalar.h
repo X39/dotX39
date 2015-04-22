@@ -8,7 +8,7 @@ namespace dotX39
 		long double _data;
 		std::string _name;
 	public:
-		DataScalar::DataScalar(long double data = 0, std::string name = "")
+		DataScalar::DataScalar(long double data = 0, std::string name = "NOTSET")
 		{
 			_data = data;
 			_name = name;
@@ -47,6 +47,8 @@ namespace dotX39
 		}
 		std::string DataScalar::toString(void) const
 		{
+			if (this->_data - (long long) this->_data == 0)
+				return std::to_string((long long) this->_data);
 			return std::to_string(this->_data);
 		}
 	};

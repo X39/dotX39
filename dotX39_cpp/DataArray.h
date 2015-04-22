@@ -9,10 +9,10 @@ namespace dotX39
 		std::vector<Data*> _data;
 		std::string _name;
 	public:
-		DataArray::DataArray(void)
+		DataArray::DataArray(std::string s = "NOTSET")
 		{
 			_data = std::vector<Data*>();
-			_name = std::string();
+			_name = s;
 		}
 		DataArray::~DataArray(void)
 		{
