@@ -8,8 +8,9 @@ node(arg = "foo")
 	time = \24:59\;
 	/*some comment*/
 	date = \31.12.9999\;
-	array = [1.0, 2.0, 3.0];
+	array = ["1", ["2", ["3"]]];
 	array = ["1", ["2", ["3", ["4", ["5", ["6", ["7", ["8"]]]]]]]];
+	array = [1.0, 2.0, 3.0];
 	array = ["layer1\]", ["layer2\]", [2.0, "layer3\]"], "layer2\]"], "layer1\]", 3.0];
 	subnode
 	{
