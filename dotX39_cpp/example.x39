@@ -1,4 +1,4 @@
-node(arg = "foo")
+node(arg = "foo", arg2 = "bar")
 {
 	stringOption = "someText";
 	alsoValid = 'some\\"Text';
