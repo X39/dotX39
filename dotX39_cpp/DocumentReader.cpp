@@ -67,6 +67,7 @@ namespace dotX39
 			{
 				while (!doc.eof())
 				{
+					char stringDetectionChar;
 					doc.read(s, READER_BUFFERSIZE - 1);
 					auto gcount = doc.gcount();
 					s[gcount] = '\0';
@@ -370,19 +371,15 @@ namespace dotX39
 									char* cp2;
 									char* cp3 = c + 1;
 									int j = 0;
-									char c2 = c[0];
+									if (data.empty())
+										stringDetectionChar = c[0];
 									while (true)
 									{
-										cp = strchr(cp3, c2);
+										cp = strchr(cp3, stringDetectionChar);
 										if (cp == NULL)
-										{
 											break;
-										}
-										for (cp2 = cp; cp2[-1] == '\\';)
-										{
+										for (cp2 = cp; cp2[-1] == '\\'; cp2--)
 											j++;
-											cp2 = cp2 - 1;
-										}
 										if (j % 2 != 1)
 											break;
 										cp3 = cp + 1;
