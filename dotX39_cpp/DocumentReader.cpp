@@ -449,6 +449,10 @@ namespace dotX39
 								//just discard it as it is not allowed for node names
 								continue;
 							}
+							else if (c[0] == ',' && argumentName.empty())
+							{
+								continue;
+							}
 							else
 							{
 								throw exception("found non alphanumeric char for argument name, please correct the file");
@@ -595,9 +599,10 @@ namespace dotX39
 							auto cp = work.c_str() + 1;
 							auto j = 0;
 							auto index = 1;
+							auto controlChar = work[0];
 							while (cp[0] != '\0')
 							{
-								if ((cp[0] == '\'' || cp[0] == '"') && j % 2 != 1)
+								if ((cp[0] == controlChar) && j % 2 != 1)
 									break;
 								if (cp[0] == '\\')
 									j++;
