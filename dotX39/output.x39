@@ -1,9 +1,9 @@
-root(argAddedAfterReading = 1.000000, escapingTest = "\[\]")
+root(argAddedAfterReading = 1, escapingTest = "\[\]")
 {
-	node(arg = "foo")
+	node(arg = "foo", arg2 = "bar")
 	{
 		stringOption = "someText";
-		alsoValid = "some\\"Text";
+		alsoValid = "some\\\"Text";
 		scalarOption = 1.200000;
 		boolOption = FALSE;
 		datetime = \31.12.9999 24:59:0\;
@@ -11,8 +11,8 @@ root(argAddedAfterReading = 1.000000, escapingTest = "\[\]")
 		date = \31.12.9999 0:0:0\;
 		array = ["1", ["2", ["3"]]];
 		array = ["1", ["2", ["3", ["4", ["5", ["6", ["7", ["8"]]]]]]]];
-		array = [1.000000, 2.000000, 3.000000];
-		array = ["layer1\]", ["layer2\]", [2.000000, "layer3\]"], "layer2\]"], "layer1\]", 3.000000];
+		array = [1, 2, 3];
+		array = ["layer1\]", ["layer2\]", [2, "layer3\]"], "layer2\]"], "layer1\]", 3];
 		subnode
 		{
 			someoption = "foo";
