@@ -260,11 +260,12 @@ namespace dotX39
 								else if (dataType == DataTypes::BOOLEAN)
 								{
 									char* cp;
-									cp = strchr(c, ';');
+									cp = strchr(c, 'e');
 									if (cp != NULL)
 									{
+										cp++;
 										data.append(c, cp);
-										i += strlen(c) - strlen(cp);
+										i += strlen(c) - strlen(cp) - 1;
 										c = cp;
 										while ((iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t') && c[0] != '\0')
 										{
@@ -334,12 +335,20 @@ namespace dotX39
 								else if (dataType == DataTypes::SCALAR)
 								{
 									char* cp;
-									cp = strchr(c, ';');
+									char* cp2 = c;
+									while (cp2[0] != '\0')
+									{
+										if (cp2[0] == '.' || (cp2[0] >= '0' && cp2[0] <= '9'))
+											cp = cp2;
+										else
+											break;
+										cp2++;
+									}
 									if (cp != NULL)
 									{
-										data.append(c, cp);
-										i += strlen(c) - strlen(cp);
-										c = cp;
+										data.append(c, cp + 1);
+										i += strlen(c) - strlen(cp + 1);
+										c = cp + 1;
 										while ((iscntrl(c[0]) || c[0] == ' ' || c[0] == '\t') && c[0] != '\0')
 										{
 											c = c + 1;

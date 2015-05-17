@@ -1,3 +1,4 @@
+argumentTest(scalar = 1, scalar = 1.2, string = "foobar", string = 'foobar', array = ["foo", "bar"], datetime = \12.12.1212 12:12\, bool = true, bool = false);
 node(arg = "foo", arg2 = "bar")
 {
 	stringOption = "someText";
