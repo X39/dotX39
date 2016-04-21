@@ -218,7 +218,6 @@
   <ItemGroup>
     <ClCompile Include="DocumentWriter.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Node.cpp" />
     <ClCompile Include="DocumentReader.cpp" />
   </ItemGroup>
   <ItemGroup>
